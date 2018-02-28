@@ -2,9 +2,8 @@ package main
 
 import (
 	"gopkg.in/mgo.v2"
-	//"gopkg.in/mgo.v2/bson"
+	"gopkg.in/mgo.v2/bson"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
@@ -14,8 +13,8 @@ var templates = template.Must(template.ParseFiles("tmpl/view.html", "tmpl/edit.h
 var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
 
 func main() {
-	server := &WikiDAO{Server: "127.0.0.1", Database: "gowiki"}
-	server.Connect()
+	dao = &WikiDAO{Server: "127.0.0.1", Database: "gowiki"}
+	dao.Connect()
 	http.HandleFunc("/", makeHandler(viewHandler))
 	http.HandleFunc("/view/", makeHandler(viewHandler))
 	http.HandleFunc("/edit/", makeHandler(editHandler))
@@ -28,10 +27,12 @@ type WikiDAO struct {
 	Database string
 }
 
+var dao *WikiDAO
+
 var db *mgo.Database
 
 const (
-	COLLECTION = "movies"
+	COLLECTION = "wikipages"
 )
 
 func (m *WikiDAO) Connect() {
@@ -40,6 +41,17 @@ func (m *WikiDAO) Connect() {
 		log.Fatal(err)
 	}
 	db = session.DB(m.Database)
+}
+
+func (m *WikiDAO) AddNewEntry(page *Page) error {
+	err := db.C(COLLECTION).Insert(&page)
+	return err
+}
+
+func (m *WikiDAO) FindByTitle(pageTitle string) (Page, error) {
+	var page Page
+	err := db.C(COLLECTION).Find(bson.M{"title": pageTitle}).One(&page)
+	return page, err
 }
 
 func makeHandler(fn func(w http.ResponseWriter, r *http.Request, title string)) func(w http.ResponseWriter, p *http.Request) {
@@ -91,21 +103,24 @@ func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
 }
 
 func (p *Page) savePage() error {
-	filename := "data/" + p.Title + ".txt"
-	return ioutil.WriteFile(filename, p.Body, 0600)
+	p.ID = bson.NewObjectId()
+	err := dao.AddNewEntry(p)
+	return err
 }
 
 func loadPage(title string) (*Page, error) {
-	filename := "data/" + title + ".txt"
-	body, err := ioutil.ReadFile(filename)
+	// filename := "data/" + title + ".txt"
+	// body, err := ioutil.ReadFile(filename)
+	page, err := dao.FindByTitle(title)
 	if err != nil {
 		return nil, err
 	}
-	return &Page{Title: title, Body: body}, nil
+	return &page, nil
 }
 
 // Page represents a web page to display its title and body
 type Page struct {
-	Title string
-	Body  []byte
+	ID    bson.ObjectId `bson:"_id" json:"id"`
+	Title string        `bson:"title" json:"title"`
+	Body  []byte        `bson:"body" json:"body"`
 }
