@@ -2,5 +2,6 @@
 
 <form action="/save/{{.Title}}" method="POST">
 <div><textarea name="body" rows="20" cols="80">{{printf "%s" .Body}}</textarea></div>
+<input type="hidden" name="id" value="{{printf "%v" .ID.Hex}}" />
 <div><input type="submit" value="Save"></div>
 </form>

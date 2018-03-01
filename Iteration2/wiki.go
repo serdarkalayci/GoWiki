@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"html/template"
@@ -22,6 +23,7 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
+// WikiDAO Represents Database access values for MongoDBs
 type WikiDAO struct {
 	Server   string
 	Database string
@@ -31,10 +33,12 @@ var dao *WikiDAO
 
 var db *mgo.Database
 
+// Collection represents MongoDB Collection
 const (
-	COLLECTION = "wikipages"
+	Collection = "wikipages"
 )
 
+// Connect method for establishing connection to MongoDB
 func (m *WikiDAO) Connect() {
 	session, err := mgo.Dial(m.Server)
 	if err != nil {
@@ -43,14 +47,23 @@ func (m *WikiDAO) Connect() {
 	db = session.DB(m.Database)
 }
 
+// AddNewEntry adds new page entry to MongoDB
 func (m *WikiDAO) AddNewEntry(page *Page) error {
-	err := db.C(COLLECTION).Insert(&page)
+	err := db.C(Collection).Insert(&page)
 	return err
 }
 
+// UpdateEntry updates existing page entry on MongoDB
+func (m *WikiDAO) UpdateEntry(page *Page) error {
+	fmt.Printf("Page Id:%v\n", page.ID)
+	err := db.C(Collection).Update(bson.M{"_id": page.ID}, bson.M{"title": page.Title, "body": page.Body})
+	return err
+}
+
+// FindByTitle finds a page entry from MongoDB
 func (m *WikiDAO) FindByTitle(pageTitle string) (Page, error) {
 	var page Page
-	err := db.C(COLLECTION).Find(bson.M{"title": pageTitle}).One(&page)
+	err := db.C(Collection).Find(bson.M{"title": pageTitle}).One(&page)
 	return page, err
 }
 
@@ -86,7 +99,15 @@ func editHandler(w http.ResponseWriter, r *http.Request, title string) {
 
 func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 	body := r.FormValue("body")
-	p := &Page{Title: title, Body: []byte(body)}
+	pageID := r.FormValue("id")
+	var p *Page
+	if pageID != "" {
+		id := bson.ObjectIdHex(pageID)
+		p = &Page{ID: id, Title: title, Body: []byte(body)}
+	} else {
+		p = &Page{Title: title, Body: []byte(body)}
+	}
+
 	err := p.savePage()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -103,8 +124,13 @@ func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
 }
 
 func (p *Page) savePage() error {
-	p.ID = bson.NewObjectId()
-	err := dao.AddNewEntry(p)
+	var err error
+	if !bson.ObjectId(p.ID).Valid() {
+		p.ID = bson.NewObjectId()
+		err = dao.AddNewEntry(p)
+	} else {
+		err = dao.UpdateEntry(p)
+	}
 	return err
 }
 
