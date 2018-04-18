@@ -74,3 +74,10 @@ func (m *WikiDAO) FindByTitle(pageTitle string) (models.Page, error) {
 	err := db.C(Collection).Find(bson.M{"title": pageTitle}).One(&page)
 	return page, err
 }
+
+// ListAllEntries Returns all entries in the database as a slice
+func (m *WikiDAO) ListAllEntries() (*[]models.Page, error) {
+	var pages []models.Page
+	err := db.C(Collection).Find(bson.M{}).Sort("-lastUpdate").All(&pages)
+	return &pages, err
+}

@@ -10,14 +10,16 @@ import (
 	"regexp"
 )
 
-var templates = template.Must(template.ParseFiles("tmpl/view.html", "tmpl/edit.html"))
+var templates = template.Must(template.ParseFiles("tmpl/view.html", "tmpl/edit.html", "tmpl/list.html"))
 var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
+var validListPath = regexp.MustCompile("^/(list)(/)?$")
 var wikiDao *dao.WikiDAO
 
 func main() {
 	wikiDao = &dao.WikiDAO{Server: "127.0.0.1", Database: "gowiki"}
 	wikiDao.Connect()
-	http.HandleFunc("/", makeHandler(viewHandler))
+	http.HandleFunc("/", makeHandler(listHandler))
+	http.HandleFunc("/list/", makeHandler(listHandler))
 	http.HandleFunc("/view/", makeHandler(viewHandler))
 	http.HandleFunc("/edit/", makeHandler(editHandler))
 	http.HandleFunc("/save/", makeHandler(saveHandler))
@@ -27,15 +29,27 @@ func main() {
 func makeHandler(fn func(w http.ResponseWriter, r *http.Request, title string)) func(w http.ResponseWriter, p *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			r.URL.Path = "/view/deneme"
+			r.URL.Path = "/list"
 		}
-		m := validPath.FindStringSubmatch(r.URL.Path)
-		if m == nil {
-			http.NotFound(w, r)
-			return
+		if validListPath.FindString(r.URL.Path) == r.URL.Path {
+			fn(w, r, "")
+		} else {
+			m := validPath.FindStringSubmatch(r.URL.Path)
+			if m == nil {
+				http.NotFound(w, r)
+				return
+			}
+			fn(w, r, m[2])
 		}
-		fn(w, r, m[2])
 	}
+}
+
+func listHandler(w http.ResponseWriter, r *http.Request, title string) {
+	pages, err := wikiDao.ListAllEntries()
+	if err != nil {
+		http.NotFound(w, r)
+	}
+	renderListTemplate(w, "list", pages)
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request, title string) {
@@ -76,6 +90,13 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 }
 
 func renderTemplate(w http.ResponseWriter, tmpl string, p *models.Page) {
+	err := templates.ExecuteTemplate(w, tmpl+".html", p)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func renderListTemplate(w http.ResponseWriter, tmpl string, p *[]models.Page) {
 	err := templates.ExecuteTemplate(w, tmpl+".html", p)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
