@@ -45,11 +45,21 @@ func makeHandler(fn func(w http.ResponseWriter, r *http.Request, title string)) 
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request, title string) {
-	pages, err := wikiDao.ListAllEntries()
-	if err != nil {
-		http.NotFound(w, r)
+	if r.Method == "POST" {
+		searchTerm := r.FormValue("searchterm")
+		println(searchTerm) //ToDo: For debugging pusposes, will be deletede
+		pages, err := wikiDao.FindEntries(searchTerm)
+		if err != nil {
+			http.NotFound(w, r)
+		}
+		renderListTemplate(w, "list", pages)
+	} else {
+		pages, err := wikiDao.ListAllEntries()
+		if err != nil {
+			http.NotFound(w, r)
+		}
+		renderListTemplate(w, "list", pages)
 	}
-	renderListTemplate(w, "list", pages)
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request, title string) {

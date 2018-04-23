@@ -75,6 +75,13 @@ func (m *WikiDAO) FindByTitle(pageTitle string) (models.Page, error) {
 	return page, err
 }
 
+// FindEntries Returns all entries in the database matching the keyword as a slice
+func (m *WikiDAO) FindEntries(searchTerm string) (*[]models.Page, error) {
+	var pages []models.Page
+	err := db.C(Collection).Find(bson.M{"title": bson.M{"$regex": bson.RegEx{searchTerm + `*`, ""}}}).Sort("-lastUpdate").All(&pages)
+	return &pages, err
+}
+
 // ListAllEntries Returns all entries in the database as a slice
 func (m *WikiDAO) ListAllEntries() (*[]models.Page, error) {
 	var pages []models.Page
