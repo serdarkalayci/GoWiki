@@ -1,0 +1,12 @@
+<html>
+    <head>
+        <title>List of all blogs</title>
+    </head>
+</html>
+<body>
+    <h1>List below</h1>
+    {{ range . }}
+    <p>[<a href="/view/{{.Title}}">{{.Title}}</a>]</p>
+    {{ end }}
+    
+</body>
