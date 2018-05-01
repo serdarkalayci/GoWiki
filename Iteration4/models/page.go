@@ -9,6 +9,6 @@ import (
 type Page struct {
 	ID         bson.ObjectId `bson:"_id" json:"id"`
 	Title      string        `bson:"title" json:"title"`
-	Body       []byte        `bson:"body" json:"body"`
+	Body       string        `bson:"body" json:"body"`
 	LastUpdate time.Time     `bson:"lastUpdate" json:"lastUpdate"`
 }

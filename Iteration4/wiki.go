@@ -50,6 +50,7 @@ func listHandler(w http.ResponseWriter, r *http.Request, title string) {
 		println(searchTerm) //ToDo: For debugging pusposes, will be deletede
 		pages, err := wikiDao.FindEntries(searchTerm)
 		if err != nil {
+			fmt.Printf(err.Error())
 			http.NotFound(w, r)
 		}
 		renderListTemplate(w, "list", pages)
@@ -84,7 +85,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 	fmt.Printf("Page Id:%v\n", pageID)
 	var p *models.Page
 	var err error
-	p = &models.Page{Title: title, Body: []byte(body)}
+	p = &models.Page{Title: title, Body: body}
 	if pageID == "" {
 		err = wikiDao.SavePage(p, true)
 	} else {
