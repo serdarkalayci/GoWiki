@@ -1,0 +1,21 @@
+<html>
+
+<head>
+    <title>List of all blogs</title>
+</head>
+
+</html>
+
+<body>
+    <form method="POST" action=".">
+        <label>Search Term:</label>
+        <input type="text" name="searchterm">&nbsp;
+        <button type="submit">Search</button>
+    </form>
+    <h1>List below</h1>
+    {{ range . }}
+    <p>[
+        <a href="/view/{{.Title}}">{{.Title}}</a>]</p>
+    {{ end }}
+    <a href=".">All Pages</a>
+</body>
