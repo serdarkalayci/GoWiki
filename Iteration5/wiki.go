@@ -3,7 +3,7 @@ package main
 import (
 	"./dao"
 	"./models"
-	"fmt"
+	//"fmt"
 	"gopkg.in/mgo.v2/bson"
 	"html/template"
 	"net/http"
@@ -47,10 +47,8 @@ func makeHandler(fn func(w http.ResponseWriter, r *http.Request, title string)) 
 func listHandler(w http.ResponseWriter, r *http.Request, title string) {
 	if r.Method == "POST" {
 		searchTerm := r.FormValue("searchterm")
-		println(searchTerm) //ToDo: For debugging pusposes, will be deletede
 		pages, err := wikiDao.FindEntries(searchTerm)
 		if err != nil {
-			fmt.Printf(err.Error())
 			http.NotFound(w, r)
 		}
 		renderListTemplate(w, "list", pages)
@@ -64,6 +62,14 @@ func listHandler(w http.ResponseWriter, r *http.Request, title string) {
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request, title string) {
+	if r.Method == "POST" {
+		pageID := r.FormValue("pageid")
+		comment := r.FormValue("comment")
+		println(comment) //ToDo: For debugging pusposes, will be deleted
+		if comment != "" {
+			_ = wikiDao.AddComment(bson.ObjectIdHex(pageID), comment)
+		}
+	}
 	p, err := wikiDao.LoadPage(title)
 	if err != nil {
 		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
@@ -82,7 +88,6 @@ func editHandler(w http.ResponseWriter, r *http.Request, title string) {
 func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 	body := r.FormValue("body")
 	pageID := r.FormValue("id")
-	fmt.Printf("Page Id:%v\n", pageID)
 	var p *models.Page
 	var err error
 	p = &models.Page{Title: title, Body: body}
@@ -90,7 +95,6 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 		err = wikiDao.SavePage(p, true)
 	} else {
 		p.ID = bson.ObjectIdHex(pageID)
-		fmt.Printf("Page Id:%v\n", p.ID)
 		err = wikiDao.SavePage(p, false)
 	}
 	if err != nil {

@@ -11,4 +11,5 @@ type Page struct {
 	Title      string        `bson:"title" json:"title"`
 	Body       string        `bson:"body" json:"body"`
 	LastUpdate time.Time     `bson:"lastUpdate" json:"lastUpdate"`
+	Comments   []Comment     `bson:"comments" json:"comments"`
 }

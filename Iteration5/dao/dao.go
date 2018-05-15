@@ -2,7 +2,7 @@ package dao
 
 import (
 	"../models"
-	"fmt"
+	//"fmt"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"log"
@@ -63,14 +63,13 @@ func (m *WikiDAO) AddNewEntry(page *models.Page) error {
 
 // UpdateEntry updates existing page entry on MongoDB
 func (m *WikiDAO) UpdateEntry(page *models.Page) error {
-	fmt.Printf("Page Id:%v\n", page.ID)
 	err := db.C(Collection).Update(bson.M{"_id": page.ID}, bson.M{"title": page.Title, "body": page.Body, "lastUpdate": time.Now()})
 	return err
 }
 
 // FindByTitle finds a page entry from MongoDB
 func (m *WikiDAO) FindByTitle(pageTitle string) (models.Page, error) {
-	var page models.Page
+	page := models.Page{}
 	err := db.C(Collection).Find(bson.M{"title": pageTitle}).One(&page)
 	return page, err
 }
@@ -88,4 +87,16 @@ func (m *WikiDAO) ListAllEntries() (*[]models.Page, error) {
 	var pages []models.Page
 	err := db.C(Collection).Find(nil).Sort("-lastUpdate").All(&pages)
 	return &pages, err
+}
+
+// AddComment adds a new comment to a page
+func (m *WikiDAO) AddComment(pageID bson.ObjectId, commentBody string) error {
+	var comment *models.Comment
+	comment = &models.Comment{CommentID: bson.NewObjectId(), Body: commentBody, CommentDate: time.Now()}
+	query := bson.M{"_id": pageID}
+	update := bson.M{"$push": bson.M{"comments": comment}}
+
+	// Update
+	err := db.C(Collection).Update(query, update)
+	return err
 }

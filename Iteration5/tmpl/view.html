@@ -9,4 +9,19 @@
     <p>[<a href="/edit/{{.Title}}">edit</a>]</p>
 
     <div style="color:red">{{printf "%s" .Body}}</div>
+
+    <div style="color:grey">
+        Do you have a comment?</br>
+        <form action="/view/{{.Title}}" method="POST">
+            <input type="hidden" name="pageid" value="{{printf "%v" .ID.Hex}}" />
+            <div><textarea name="comment" rows="20" cols="80"></textarea></div>
+            <input type="hidden" name="id" value="{{printf "%v" .ID.Hex}}" />
+            <div><input type="submit" value="Save"></div>
+    </div>
+    <h1>Commnents</h1>
+    {{ range .Comments }}
+    <p>
+        )){{.Body}}</br>{{.CommentDate}}
+    </p>
+    {{ end }}
 </body>
